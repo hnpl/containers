@@ -1,0 +1,38 @@
+FROM ubuntu:20.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt -y update
+RUN apt -y upgrade
+RUN apt -y install \
+  binutils build-essential libtool texinfo gzip zip unzip patchutils curl git \
+  make cmake ninja-build automake bison flex gperf grep sed gawk bc \
+  zlib1g-dev libexpat1-dev libmpc-dev libglib2.0-dev libfdt-dev libpixman-1-dev
+
+RUN mkdir -p /riscv/_install
+WORKDIR /riscv
+ENV PATH=`/riscv/bin:$PATH`
+RUN git clone --recursive https://github.com/riscv/riscv-gnu-toolchain
+WORKDIR /riscv/riscv-gnu-toolchain
+RUN ./configure --prefix=/riscv/_install --enable-multilib
+RUN make linux -j`nproc`
+RUN make install
+
+RUN ls /riscv/_install/bin/
+
+WORKDIR /riscv
+RUN git clone https://github.com/llvm/llvm-project.git riscv-llvm
+WORKDIR /riscv/riscv-llvm
+RUN ln -s ../../clang llvm/tools || true
+RUN mkdir _build
+WORKDIR /riscv/riscv-llvm/_build
+RUN cmake -G Ninja -DCMAKE_BUILD_TYPE="Release" \
+  -DBUILD_SHARED_LIBS=True -DLLVM_USE_SPLIT_DWARF=True \
+  -DCMAKE_INSTALL_PREFIX="/riscv/_install" \
+  -DLLVM_OPTIMIZED_TABLEGEN=True -DLLVM_BUILD_TESTS=False \
+  -DDEFAULT_SYSROOT="/riscv/_install/sysroot" \
+  -DLLVM_DEFAULT_TARGET_TRIPLE="riscv64-unknown-linux-gnu" \
+  -DLLVM_TARGETS_TO_BUILD="RISCV" \
+  ../llvm
+RUN cmake --build . --target install -j`nproc`
+
+RUN mkdir -p /workdir
