@@ -1,4 +1,5 @@
-FROM ubuntu:20.04
+# stage 1: download the compilers and compile them
+FROM ubuntu:20.04 AS stage1
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt -y update
@@ -10,7 +11,7 @@ RUN apt -y install \
 
 RUN mkdir -p /riscv/_install
 WORKDIR /riscv
-ENV PATH=`/riscv/bin:$PATH`
+ENV PATH=`/riscv/_install/bin:$PATH`
 RUN git clone --recursive https://github.com/riscv/riscv-gnu-toolchain
 WORKDIR /riscv/riscv-gnu-toolchain
 RUN ./configure --prefix=/riscv/_install --enable-multilib
@@ -34,5 +35,21 @@ RUN cmake -G Ninja -DCMAKE_BUILD_TYPE="Release" \
   -DLLVM_TARGETS_TO_BUILD="RISCV" \
   ../llvm
 RUN cmake --build . --target install -j`nproc`
+
+
+
+# stage 2: create a new container with the compiled cross-compilers only
+FROM ubuntu:20.04
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt -y update
+RUN apt -y upgrade
+RUN apt -y install \
+  binutils build-essential libtool texinfo gzip zip unzip patchutils curl git \
+  make cmake ninja-build automake bison flex gperf grep sed gawk bc \
+  zlib1g-dev libexpat1-dev libmpc-dev libglib2.0-dev libfdt-dev libpixman-1-dev
+
+RUN mkdir -p /riscv/
+COPY --from=stage1 /riscv/_install/ /riscv/_install
+ENV PATH=/riscv/_install/bin:$PATH
 
 RUN mkdir -p /workdir
