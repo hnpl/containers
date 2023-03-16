@@ -1,0 +1,22 @@
+FROM ubuntu:22.04
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt -y update
+RUN apt -y upgrade
+RUN apt -y install \
+  binutils build-essential libtool texinfo gzip zip unzip patchutils curl git \
+  make cmake ninja-build automake bison flex gperf grep sed gawk bc \
+  zlib1g-dev libexpat1-dev libmpc-dev libglib2.0-dev libfdt-dev libpixman-1-dev \
+  vim tmux python-is-python3
+
+RUN mkdir -p /riscv/_install
+WORKDIR /riscv
+ENV PATH=`/riscv/_install/bin:$PATH`
+
+RUN git clone --recursive -b rvv-next https://github.com/riscv/riscv-gnu-toolchain -j`nproc`
+
+WORKDIR /riscv/riscv-gnu-toolchain/
+RUN ./configure --prefix=/riscv/_install --enable-multilib
+RUN make linux -j`nproc`
+RUN make install
+
+ENV PATH=/riscv/_install/bin:$PATH
