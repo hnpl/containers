@@ -1,0 +1,22 @@
+FROM ubuntu:22.04
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt -y update
+RUN apt -y upgrade
+RUN apt-get -y install build-essential vim
+
+# https://wiki.qemu.org/Hosts/Linux
+RUN apt-get -y install valgrind xfslibs-dev libvde-dev libvdeplug-dev libvte-2.91-dev \
+    libxen-dev liblzo2-dev libsasl2-dev libsdl2-dev libseccomp-dev libsnappy-dev libssh-dev \
+    librbd-dev librdmacm-dev libibverbs-dev libjpeg8-dev libncurses5-dev libnuma-dev \
+    libcap-ng-dev libcurl4-gnutls-dev libgtk-3-dev libaio-dev libbluetooth-dev libcapstone-dev \
+    libbrlapi-dev libbz2-dev git-email
+
+# enable network
+RUN sudo apt-get install libslirp-dev
+
+# clone qemu
+WORKDIR /
+RUN git clone --recursive https://github.com/qemu/qemu
+WORKDIR /qemu
+RUN ./configure --target-list=x86_64-softmmu --enable-debug --enable-slirp
+RUN make -j`nproc`
