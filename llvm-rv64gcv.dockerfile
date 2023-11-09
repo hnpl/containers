@@ -1,4 +1,4 @@
-# Copyright (c) 2022 The Regents of the University of California
+# Copyright (c) 2022-2023 The Regents of the University of California
 # All Rights Reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -24,8 +24,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# stage 1: download the dependencies
-FROM ubuntu:20.04 AS stage1
+FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt -y update
 RUN apt -y upgrade
@@ -34,21 +33,17 @@ RUN apt -y install \
   make cmake ninja-build automake bison flex gperf grep sed gawk bc \
   zlib1g-dev libexpat1-dev libmpc-dev libglib2.0-dev libfdt-dev libpixman-1-dev
 
-# stage 2: download the compilers and compile them
-FROM stage1 AS stage2
 RUN mkdir -p /riscv/_install
 WORKDIR /riscv
 ENV PATH=`/riscv/_install/bin:$PATH`
-RUN git clone --recursive https://github.com/riscv/riscv-gnu-toolchain
+RUN git clone --recursive https://github.com/riscv/riscv-gnu-toolchain -j`nproc`
 WORKDIR /riscv/riscv-gnu-toolchain
-RUN git checkout --recurse-submodules 051b9f7ddb7d136777505ea19c70a41926842b96
 RUN ./configure --prefix=/riscv/_install --enable-multilib
 RUN make linux -j`nproc`
 RUN make install
 WORKDIR /riscv
-RUN git clone https://github.com/llvm/llvm-project.git riscv-llvm
+RUN git clone -b llvmorg-17.0.2 https://github.com/llvm/llvm-project.git riscv-llvm
 WORKDIR /riscv/riscv-llvm
-RUN git checkout 2ef95efb414e215490a222de05cafdffb8054758
 RUN ln -s ../../clang llvm/tools || true
 RUN mkdir _build
 WORKDIR /riscv/riscv-llvm/_build
@@ -62,8 +57,3 @@ RUN cmake -G Ninja -DCMAKE_BUILD_TYPE="Release" \
   ../llvm
 RUN cmake --build . --target install -j`nproc`
 
-# stage 3: create a new container with the compiled cross-compilers only
-FROM stage1
-RUN mkdir -p /riscv/
-COPY --from=stage2 /riscv/_install/ /riscv/_install
-ENV PATH=/riscv/_install/bin:$PATH
