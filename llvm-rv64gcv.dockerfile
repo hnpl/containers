@@ -44,7 +44,6 @@ RUN make install
 WORKDIR /riscv
 RUN git clone -b llvmorg-17.0.2 https://github.com/llvm/llvm-project.git riscv-llvm
 WORKDIR /riscv/riscv-llvm
-RUN ln -s ../../clang llvm/tools || true
 RUN mkdir _build
 WORKDIR /riscv/riscv-llvm/_build
 RUN cmake -G Ninja -DCMAKE_BUILD_TYPE="Release" \
@@ -54,6 +53,7 @@ RUN cmake -G Ninja -DCMAKE_BUILD_TYPE="Release" \
   -DDEFAULT_SYSROOT="/riscv/_install/sysroot" \
   -DLLVM_DEFAULT_TARGET_TRIPLE="riscv64-unknown-linux-gnu" \
   -DLLVM_TARGETS_TO_BUILD="RISCV" \
+  -DLLVM_ENABLE_PROJECTS="clang" \
   ../llvm
 RUN cmake --build . --target install -j`nproc`
 
