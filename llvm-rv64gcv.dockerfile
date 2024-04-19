@@ -53,7 +53,7 @@ RUN cmake -G Ninja -DCMAKE_BUILD_TYPE="Release" \
   -DDEFAULT_SYSROOT="/workdir/artifacts/riscv/_install/sysroot" \
   -DLLVM_DEFAULT_TARGET_TRIPLE="riscv64-unknown-linux-gnu" \
   -DLLVM_TARGETS_TO_BUILD="RISCV" \
-  -DLLVM_ENABLE_PROJECTS="clang;flang;polly" \
+  -DLLVM_ENABLE_PROJECTS="clang;flang;openmp;polly" \
   ../llvm
 RUN cmake --build . --target install -j`nproc`
 
