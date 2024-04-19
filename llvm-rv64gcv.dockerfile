@@ -48,12 +48,12 @@ RUN mkdir _build
 WORKDIR /riscv/riscv-llvm/_build
 RUN cmake -G Ninja -DCMAKE_BUILD_TYPE="Release" \
   -DBUILD_SHARED_LIBS=True -DLLVM_USE_SPLIT_DWARF=True \
-  -DCMAKE_INSTALL_PREFIX="/riscv/_install" \
+  -DCMAKE_INSTALL_PREFIX="/workdir/artifacts/riscv/_install" \
   -DLLVM_OPTIMIZED_TABLEGEN=True -DLLVM_BUILD_TESTS=False \
-  -DDEFAULT_SYSROOT="/riscv/_install/sysroot" \
+  -DDEFAULT_SYSROOT="/workdir/artifacts/riscv/_install/sysroot" \
   -DLLVM_DEFAULT_TARGET_TRIPLE="riscv64-unknown-linux-gnu" \
   -DLLVM_TARGETS_TO_BUILD="RISCV" \
-  -DLLVM_ENABLE_PROJECTS="clang;polly" \
+  -DLLVM_ENABLE_PROJECTS="clang;flang;polly" \
   ../llvm
 RUN cmake --build . --target install -j`nproc`
 
